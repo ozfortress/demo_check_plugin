@@ -1,0 +1,49 @@
+name: Demo Check Autobuild
+# shamelessly stolen from https://github.com/sapphonie/StAC-tf2/blob/master/.github/workflows/blank.yml - thanks sapph!
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  run:
+    name: Run action
+    runs-on: ubuntu-latest
+
+    # skip build on '[ci skip]'
+    if: "!contains(github.event.head_commit.message, '[ci skip]')"
+    # this angers the ~linter~
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: true
+
+    - name: Setup SourcePawn Compiler
+      uses: rumblefrog/setup-sp@master
+      with:
+        version: '1.12.x'
+
+    - name: Compile Plugins
+      run: |
+        cd ./scripting
+        pwd
+        spcomp -i"./include/" demo_check.sp -o ../plugins/demo_check.smx
+        ls -la
+
+    - name: Zip packages
+      run: |
+        mkdir build
+        7za a -r build/demo_check.zip scripting/ plugins/ extensions/ translations/
+        ls -la
+        pwd
+
+    - name: Release
+      uses: softprops/action-gh-release@v1
+      if: startsWith(github.ref, 'refs/tags/')
+      with:
+        files: |
+          ./build/demo_check.zip
+        fail_on_unmatched_files: true
+        generate_release_notes: true

@@ -17,6 +17,8 @@
 #include <sourcemod>
 #include <sdktools>
 #include <morecolors>
+#include <SteamWorks>
+#include <discord>
 
 #define DEMOCHECK_TAG "{lime}[{red}Demo Check{lime}]{white} "
 
@@ -25,12 +27,17 @@ public Plugin:myinfo =
     name = "Demo Check",
     author = "Shigbeard",
     description = "Checks if a player is recording a demo",
-    version = "1.0.1",
+    version = "1.1.0",
     url = "https://ozfortress.com/"
 };
 
 ConVar g_bDemoCheckEnabled;
 ConVar g_bDemoCheckOnReadyUp; // Requires SoapDM
+ConVar g_bDemoCheckWarn;
+ConVar g_bDemoCheckAnnounce;
+ConVar g_bDemoCheckAnnounceDiscord; // Requires Discord
+ConVar g_HostName;
+ConVar g_HostPort;
 
 public void OnPluginStart()
 {
@@ -39,6 +46,10 @@ public void OnPluginStart()
     g_bDemoCheckEnabled = CreateConVar("sm_democheck_enabled", "1", "Enable demo check", FCVAR_NOTIFY, true, 0.0, true, 1.0);
     g_bDemoCheckOnReadyUp = CreateConVar("sm_democheck_onreadyup", "0", "Check if all players are recording a demo when both teams ready up - requires SoapDM", FCVAR_NOTIFY, true, 0.0, true, 1.0);
 
+    g_bDemoCheckWarn = CreateConVar("sm_democheck_warn", "0", " Set the plugin into warning only mode.", FCVAR_NOTIFY, true, 0.0, true, 1.0);
+    g_bDemoCheckAnnounce = CreateConVar("sm_democheck_announce", "1", "Announce passed demo checks to chat", FCVAR_NOTIFY, true, 0.0, true, 1.0);
+    g_bDemoCheckAnnounceDiscord = CreateConVar("sm_democheck_announce_discord", "0", "Announce failed demo checks to discord", FCVAR_NOTIFY, true, 0.0, true, 1.0);
+
     RegServerCmd("sm_democheck", Cmd_DemoCheck_Console, "Check if a player is recording a demo", 0);
     RegServerCmd("sm_democheck_enable", Cmd_DemoCheckEnable_Console, "Enable demo check", 0);
     RegServerCmd("sm_democheck_disable", Cmd_DemoCheckDisable_Console, "Disable demo check", 0);
@@ -46,6 +57,8 @@ public void OnPluginStart()
 
     HookConVarChange(g_bDemoCheckEnabled, OnDemoCheckEnabledChange)
 
+    g_HostName = FindConVar("hostname");
+    g_HostPort = FindConVar("hostport");
 }
 
 public void SOAP_StopDeathMatching()
@@ -77,7 +90,10 @@ public void OnDemoCheckEnabledChange(ConVar convar, const char[] oldValue, const
 {
     if (GetConVarBool(g_bDemoCheckEnabled))
     {
-        CPrintToChatAll(DEMOCHECK_TAG ... "%t", "enabled");
+        if (GetConVarBool(g_bDemoCheckAnnounce))
+        {
+            CPrintToChatAll(DEMOCHECK_TAG ... "%t", "enabled");
+        }
         for (int i = 1; i <= MaxClients; i++)
         {
             if (IsClientInGame(i))
@@ -88,7 +104,10 @@ public void OnDemoCheckEnabledChange(ConVar convar, const char[] oldValue, const
     }
     else
     {
-        CPrintToChatAll(DEMOCHECK_TAG ... "%t", "disabled");
+        if (GetConVarBool(g_bDemoCheckAnnounce))
+        {
+            CPrintToChatAll(DEMOCHECK_TAG ... "%t", "disabled");
+        }
     }
 }
 
@@ -171,7 +190,10 @@ public void OnDSEnableCheck(QueryCookie cookie, int client, ConVarQueryResult re
 {
     if (StrEqual(value, "3"))
     {
-        CPrintToChat(client, DEMOCHECK_TAG ... "%t", "ds_enabled 3");
+        if (GetConVarBool(g_bDemoCheckAnnounce))
+        {
+            CPrintToChat(client, DEMOCHECK_TAG ... "%t", "ds_enabled 3");
+        }
     }
     else if(StrEqual(value, "0"))
     {
@@ -179,17 +201,33 @@ public void OnDSEnableCheck(QueryCookie cookie, int client, ConVarQueryResult re
         PrintToConsole(client, "[Demo Check] %t", "docs");
         char sName[64];
         GetClientName(client, sName, sizeof(sName));
-        CreateTimer(2.0, Timer_KickClient, client);
-        CPrintToChatAll(DEMOCHECK_TAG ... "%t", "kicked_announce", sName);
+
+        if (GetConVarBool(g_bDemoCheckWarn))
+        {
+            if (GetConVarBool(g_bDemoCheckAnnounce))
+            {
+                CPrintToChatAll(DEMOCHECK_TAG ... "%t", "kicked_announce_disabled", sName);
+            }
+        } else {
+            CreateTimer(2.0, Timer_KickClient, client);
+            CPrintToChatAll(DEMOCHECK_TAG ... "%t", "kicked_announce", sName);
+        }
     }
     else
     {
         PrintToConsole(client, "[Demo Check] %t", "ds_enabled 0");
         PrintToConsole(client, "[Demo Check] %t", "docs");
         char sName[64];
-        GetClientName(client, sName, sizeof(sName));
-        CreateTimer(2.0, Timer_KickClient, client);
-        CPrintToChatAll(DEMOCHECK_TAG ... "%t", "kicked_announce", sName);
+        if (GetConVarBool(g_bDemoCheckWarn))
+        {
+            if (GetConVarBool(g_bDemoCheckAnnounce))
+            {
+                CPrintToChatAll(DEMOCHECK_TAG ... "%t", "kicked_announce_disabled", sName);
+            }
+        } else {
+            CreateTimer(2.0, Timer_KickClient, client);
+            CPrintToChatAll(DEMOCHECK_TAG ... "%t", "kicked_announce", sName);
+        }
     }
 }
 
@@ -201,17 +239,69 @@ public void OnDSAutoDeleteCheck(QueryCookie cookie, int client, ConVarQueryResul
         PrintToConsole(client, "[Demo Check] %t", "docs");
         char sName[64];
         GetClientName(client, sName, sizeof(sName));
-        CreateTimer(2.0, Timer_KickClient, client);
-        CPrintToChatAll(DEMOCHECK_TAG ... "%t", "kicked_announce", sName);
+        if (GetConVarBool(g_bDemoCheckWarn))
+        {
+            if (GetConVarBool(g_bDemoCheckAnnounce))
+            {
+                CPrintToChatAll(DEMOCHECK_TAG ... "%t", "kicked_announce_disabled", sName);
+            }
+        } else {
+            CreateTimer(2.0, Timer_KickClient, client);
+            CPrintToChatAll(DEMOCHECK_TAG ... "%t", "kicked_announce", sName);
+        }
     }
     else
     {
-        CPrintToChat(client, DEMOCHECK_TAG ... "%t", "ds_autodelete 0");
+        if (GetConVarBool(g_bDemoCheckAnnounce))
+        {
+            CPrintToChat(client, DEMOCHECK_TAG ... "%t", "ds_autodelete 0");
+        }
     }
 }
 
 public Action Timer_KickClient(Handle timer, int client)
 {
+    if (!IsClientInGame(client))
+    {
+        return Plugin_Stop;
+    }
+    if (GetConVarBool(g_bDemoCheckAnnounceDiscord))
+    {
+        char sName[64];
+        char sSteamID[64];
+        char sProfileURL[64];
+        char sServerName[64];
+        int iServerIP[4];
+        int iServerPort;
+        char sServerIP[64];
+        GetClientName(client, sName, sizeof(sName));
+        GetClientAuthId(client, AuthId_Steam2, sSteamID, sizeof(sSteamID));
+        GetClientAuthId(client, AuthId_SteamID64, sProfileURL, sizeof(sProfileURL));
+        Format(sProfileURL, sizeof(sProfileURL), "https://steamcommunity.com/profiles/%s", sProfileURL);
+        char sMsg[512];
+        if (g_HostName == INVALID_HANDLE)
+        {
+            g_HostName = FindConVar("hostname");
+            if (g_HostName == INVALID_HANDLE)
+            {
+                Format(sServerName, sizeof(sServerName), "Unknown Server");
+            }
+        }
+        if (g_HostPort == INVALID_HANDLE)
+        {
+            g_HostPort = FindConVar("hostport");
+            if (g_HostPort == INVALID_HANDLE)
+            {
+                iServerPort = 27015;
+            }
+        }
+        GetConVarString(g_HostName, sServerName, sizeof(sServerName));
+        iServerPort = GetConVarInt(g_HostPort);
+        SteamWorks_GetPublicIP(iServerIP);
+        Format(sServerIP, sizeof(sServerIP), "%i.%i.%i.%i:%i", iServerIP[0], iServerIP[1], iServerIP[2], iServerIP[3], iServerPort);
+        Format(sMsg, sizeof(sMsg), "[Demo Check] %t", "discord_democheck", sName, sSteamID, sProfileURL, sServerName, sServerIP);
+        Discord_SendMessage("democheck", sMsg);
+    }
     KickClient(client, "[Demo Check] %t", "kicked");
     return Plugin_Stop;
 }

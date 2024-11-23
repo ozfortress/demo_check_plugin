@@ -32,6 +32,11 @@
     {
         "en"    "You have been kicked from the server for failing the Demo Check. See console for details."
     }
+    "kicked_announce_disabled"
+    {
+        "#format" "{1:s}"
+        "en"    "{red}Warning! {lime}{1}{white} does not appear to be auto-recording demos correctly."
+    }
     "kicked_announce"
     {
         "#format" "{1:s}"
@@ -40,5 +45,11 @@
     "docs"
     {
         "en"    "Your settings for recording Demos is incorrect. Please read the docs here: docs.ozfortress.com/guides/pov_demo_recording/"
+    }
+
+    "discord_democheck"
+    {
+        "#format" "{1:s},{2:s},{3:s},{4:s},{5:s}"
+        "en"    "[{1} ({2})]({3}) failed the demo check at {4} - `{5}`"
     }
 }

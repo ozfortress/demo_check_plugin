@@ -1,3 +1,2 @@
-plugins
+# ignore my ide
 .vscode
-demo_check.zip
