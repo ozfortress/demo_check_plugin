@@ -1,4 +1,5 @@
 # Demo Checker Plugin
+[![Demo Check Autobuild](https://github.com/ozfortress/demo_check_plugin/actions/workflows/build.yml/badge.svg)](https://github.com/ozfortress/demo_check_plugin/actions/workflows/build.yml)
 
 This plugin is used to check if players are recording demos or not.
 
