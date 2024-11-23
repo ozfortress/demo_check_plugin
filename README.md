@@ -5,7 +5,7 @@ This plugin is used to check if players are recording demos or not.
 ## Installation
 
 1. Download the plugin from the [releases page](https://github.com/ozfortres/demo-check-plugin/releases).
-2. Install into your `tf/addons/sourcemod/plugins` directory.
+2. Install the `plugins/demo_check.smx` file into your `tf/addons/sourcemod/plugins` directory.
 3. Install the `translations/demo_check.phrases.txt` file into your `tf/addons/sourcemod/translations` directory.
 4. Restart your server.
 
