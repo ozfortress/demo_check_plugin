@@ -4,30 +4,26 @@
  * Plugin to check if a player is recording a demo.
  */
 
-/**
- * DEV NOTES
- *
- *  https://sourcemod.dev/#/convars/function.QueryClientConVar
- *
- * ds_enable 0/1/2 - if set to one of these, boot with config on, warn with config off
- * ds_enable 3 - if this is on, a ok
- * ds_autodelete 1 instant boot with config on, prompt player to turn it off
- */
-
 #include <sourcemod>
 #include <sdktools>
 #include <morecolors>
 #include <SteamWorks>
+#if !defined NO_DISCORD
 #include <discord>
+#endif
 
 #define DEMOCHECK_TAG "{lime}[{red}Demo Check{lime}]{white} "
 
 public Plugin:myinfo =
 {
+    #if !defined NO_DISCORD
     name = "Demo Check",
+    #else
+    name = "Demo Check (No Discord)",
+    #endif
     author = "Shigbeard",
     description = "Checks if a player is recording a demo",
-    version = "1.1.0",
+    version = "1.1.1",
     url = "https://ozfortress.com/"
 };
 
@@ -35,9 +31,12 @@ ConVar g_bDemoCheckEnabled;
 ConVar g_bDemoCheckOnReadyUp; // Requires SoapDM
 ConVar g_bDemoCheckWarn;
 ConVar g_bDemoCheckAnnounce;
+#if !defined NO_DISCORD
 ConVar g_bDemoCheckAnnounceDiscord; // Requires Discord
 ConVar g_HostName;
 ConVar g_HostPort;
+#endif
+ConVar g_bDemoCheckAnnounceTextFile; // Dumps to a text file
 
 public void OnPluginStart()
 {
@@ -48,7 +47,12 @@ public void OnPluginStart()
 
     g_bDemoCheckWarn = CreateConVar("sm_democheck_warn", "0", " Set the plugin into warning only mode.", FCVAR_NOTIFY, true, 0.0, true, 1.0);
     g_bDemoCheckAnnounce = CreateConVar("sm_democheck_announce", "1", "Announce passed demo checks to chat", FCVAR_NOTIFY, true, 0.0, true, 1.0);
+#if !defined NO_DISCORD
     g_bDemoCheckAnnounceDiscord = CreateConVar("sm_democheck_announce_discord", "0", "Announce failed demo checks to discord", FCVAR_NOTIFY, true, 0.0, true, 1.0);
+    g_HostName = FindConVar("hostname");
+    g_HostPort = FindConVar("hostport");
+#endif
+    g_bDemoCheckAnnounceTextFile = CreateConVar("sm_democheck_announce_textfile", "0", "Dump failed demo checks to a text file", FCVAR_NOTIFY, true, 0.0, true, 1.0);
 
     RegServerCmd("sm_democheck", Cmd_DemoCheck_Console, "Check if a player is recording a demo", 0);
     RegServerCmd("sm_democheck_enable", Cmd_DemoCheckEnable_Console, "Enable demo check", 0);
@@ -57,8 +61,6 @@ public void OnPluginStart()
 
     HookConVarChange(g_bDemoCheckEnabled, OnDemoCheckEnabledChange)
 
-    g_HostName = FindConVar("hostname");
-    g_HostPort = FindConVar("hostport");
 }
 
 public void SOAP_StopDeathMatching()
@@ -265,6 +267,7 @@ public Action Timer_KickClient(Handle timer, int client)
     {
         return Plugin_Stop;
     }
+#if !defined NO_DISCORD
     if (GetConVarBool(g_bDemoCheckAnnounceDiscord))
     {
         char sName[64];
@@ -301,6 +304,25 @@ public Action Timer_KickClient(Handle timer, int client)
         Format(sServerIP, sizeof(sServerIP), "%i.%i.%i.%i:%i", iServerIP[0], iServerIP[1], iServerIP[2], iServerIP[3], iServerPort);
         Format(sMsg, sizeof(sMsg), "[Demo Check] %t", "discord_democheck", sName, sSteamID, sProfileURL, sServerName, sServerIP);
         Discord_SendMessage("democheck", sMsg);
+    }
+#endif
+    if (GetConVarBool(g_bDemoCheckAnnounceTextFile))
+    {
+        char sName[64];
+        char sSteamID[64];
+        char sProfileURL[64];
+        char sDateTime[64];
+        FormatTime(sDateTime, sizeof(sDateTime), "%Y-%m-%d %H:%M:%S");
+        GetClientName(client, sName, sizeof(sName));
+        GetClientAuthId(client, AuthId_Steam2, sSteamID, sizeof(sSteamID));
+        GetClientAuthId(client, AuthId_SteamID64, sProfileURL, sizeof(sProfileURL));
+        Format(sProfileURL, sizeof(sProfileURL), "https://steamcommunity.com/profiles/%s", sProfileURL);
+        GetClientName(client, sName, sizeof(sName));
+        char sMsg[512];
+        Format(sMsg, sizeof(sMsg), "[Demo Check] %t", sName, sSteamID, sProfileURL, sDateTime);
+        Handle file = OpenFile("democheck.log", "a");
+        WriteFileLine(file, sMsg);
+        CloseHandle(file);
     }
     KickClient(client, "[Demo Check] %t", "kicked");
     return Plugin_Stop;

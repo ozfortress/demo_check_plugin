@@ -30,6 +30,7 @@ jobs:
         cd ./scripting
         pwd
         spcomp -i"./include/" demo_check.sp -o ../plugins/demo_check.smx
+        spcomp -i"./include/" NO_DISCORD=true demo_check.sp -o ../plugins/demo_check_no_discord.smx
         ls -la
 
     - name: Zip packages
