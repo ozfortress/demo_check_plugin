@@ -2,6 +2,10 @@
 
 This plugin is used to check if players are recording demos or not.
 
+## Compiling
+
+Requires [morecolors.inc](https://github.com/DoctorMcKay/sourcemod-plugins/blob/master/scripting/include/morecolors.inc)
+
 ## Installation
 
 1. Download the plugin from the [releases page](https://github.com/ozfortres/demo-check-plugin/releases).

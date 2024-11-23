@@ -17,7 +17,6 @@
 #include <sourcemod>
 #include <sdktools>
 #include <morecolors>
-#include <SteamWorks>
 
 #define DEMOCHECK_TAG "{lime}[{red}Demo Check{lime}]{white} "
 
@@ -26,7 +25,7 @@ public Plugin:myinfo =
     name = "Demo Check",
     author = "Shigbeard",
     description = "Checks if a player is recording a demo",
-    version = "1.0",
+    version = "1.0.1",
     url = "https://ozfortress.com/"
 };
 
