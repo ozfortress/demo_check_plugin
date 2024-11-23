@@ -1,0 +1,44 @@
+"Phrases"
+{
+    "enabled"
+    {
+        "en"    "Demo Checking has been enabled. Testing all users in the server and new users joining."
+    }
+    "disabled"
+    {
+        "en"    "Demo Checking has been disabled."
+    }
+    "ds_enabled 0"
+    {
+        "en"    "ds_enabled is set to 0, you are not recording a demo."
+    }
+    "ds_enabled 1 or 2"
+    {
+        "en"    "ds_enabled is set to 1 or 2, you are not recording a demo correctly."
+    }
+    "ds_enabled 3"
+    {
+        "en"    "ds_enabled is set to 3, you are recording a demo."
+    }
+    "ds_autodelete 1"
+    {
+        "en"    "ds_autodelete is set to 1, demos are being deleted."
+    }
+    "ds_autodelete 0"
+    {
+        "en"    "ds_autodelete is set to 0, demos are not being deleted."
+    }
+    "kicked"
+    {
+        "en"    "You have been kicked from the server for failing the Demo Check. See console for details."
+    }
+    "kicked_announce"
+    {
+        "#format" "{1:s}"
+        "en"    "{lime}{1}{white} was kicked from the server for failing the Demo Check."
+    }
+    "docs"
+    {
+        "en"    "Your settings for recording Demos is incorrect. Please read the docs here: docs.ozfortress.com/guides/pov_demo_recording/"
+    }
+}
