@@ -5,7 +5,7 @@ This plugin is used to check if players are recording demos or not.
 
 ## Compiling
 
-All includes and extensions are bundled with this repository. Special thanks to [Dr. McKay](https://github.com/DoctorMcKay/sourcemod-plugins/blob/master/scripting/include/morecolors.inc) and [Sapphonie](https://github.com/sapphonie/StAC-tf2) from whom I shamelessly stole morecolors.inc and discord.inc (plus extensions) from.
+All includes and extensions are bundled with this repository. Special thanks to [Dr. McKay](https://github.com/DoctorMcKay/sourcemod-plugins/blob/master/scripting/include/morecolors.inc) and [Sapphonie](https://github.com/sapphonie/StAC-tf2) from whom I shamelessly stole morecolors.inc and SteamWorks/discord.inc (plus extensions) from.
 
 Note: Don't like Discord? You can compile without Discord by passing `NO_DISCORD=true` to spcomp.
 

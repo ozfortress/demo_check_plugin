@@ -8,6 +8,7 @@
 #include <sdktools>
 #include <morecolors>
 #if !defined NO_DISCORD
+#include <SteamWorks>
 #include <discord>
 #endif
 
