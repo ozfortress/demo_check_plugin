@@ -7,7 +7,6 @@
 #include <sourcemod>
 #include <sdktools>
 #include <morecolors>
-#include <SteamWorks>
 #if !defined NO_DISCORD
 #include <discord>
 #endif
@@ -23,7 +22,7 @@ public Plugin:myinfo =
     #endif
     author = "Shigbeard",
     description = "Checks if a player is recording a demo",
-    version = "1.1.1",
+    version = "1.1.2",
     url = "https://ozfortress.com/"
 };
 
