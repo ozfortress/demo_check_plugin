@@ -78,6 +78,9 @@ public void OnPluginStart()
 }
 
 public void SOAP_StopDeathMatching()
+// This forward is called by SoapDM_Tournament whenever both teams have readied up
+// SoapDM uses it as an opportunity to execute a config file to unload a series of plugins
+// We use it as an opportunity to check demo settings.
 {
     if (GetConVarBool(g_bDemoCheckOnReadyUp))
     {
@@ -92,6 +95,7 @@ public void SOAP_StopDeathMatching()
 }
 
 public void OnClientPutInServer(int client)
+// Check a player once they've joined the game. We wait until they've fully connected.
 {
     if (IsClientInGame(client))
     {
