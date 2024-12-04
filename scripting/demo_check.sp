@@ -23,7 +23,7 @@ public Plugin:myinfo =
     #endif
     author = "Shigbeard",
     description = "Checks if a player is recording a demo",
-    version = "1.1.2",
+    version = "1.1.3",
     url = "https://ozfortress.com/"
 };
 
@@ -47,12 +47,14 @@ public void OnPluginStart()
 
     g_bDemoCheckWarn = CreateConVar("sm_democheck_warn", "0", " Set the plugin into warning only mode.", FCVAR_NOTIFY, true, 0.0, true, 1.0);
     g_bDemoCheckAnnounce = CreateConVar("sm_democheck_announce", "1", "Announce passed demo checks to chat", FCVAR_NOTIFY, true, 0.0, true, 1.0);
-#if !defined NO_DISCORD
-    g_bDemoCheckAnnounceDiscord = CreateConVar("sm_democheck_announce_discord", "0", "Announce failed demo checks to discord", FCVAR_NOTIFY, true, 0.0, true, 1.0);
-    g_HostName = FindConVar("hostname");
-    g_HostPort = FindConVar("hostport");
-#endif
+    #if !defined NO_DISCORD
+        g_bDemoCheckAnnounceDiscord = CreateConVar("sm_democheck_announce_discord", "0", "Announce failed demo checks to discord", FCVAR_NOTIFY, true, 0.0, true, 1.0);
+        g_HostName = FindConVar("hostname");
+        g_HostPort = FindConVar("hostport");
+    #endif
     g_bDemoCheckAnnounceTextFile = CreateConVar("sm_democheck_announce_textfile", "0", "Dump failed demo checks to a text file", FCVAR_NOTIFY, true, 0.0, true, 1.0);
+
+    AutoExecConfig(true, "democheck");
 
     RegServerCmd("sm_democheck", Cmd_DemoCheck_Console, "Check if a player is recording a demo", 0);
     RegServerCmd("sm_democheck_enable", Cmd_DemoCheckEnable_Console, "Enable demo check", 0);
@@ -61,6 +63,18 @@ public void OnPluginStart()
 
     HookConVarChange(g_bDemoCheckEnabled, OnDemoCheckEnabledChange)
 
+    // Perform a check on all players when the plugin is loaded
+    if (GetConVarBool(g_bDemoCheckEnabled))
+    {
+        PrintToChatAll(DEMOCHECK_TAG ... "%t", "plugin_start_check_all");
+        for (int i = 1; i <= MaxClients; i++)
+        {
+            if (IsClientInGame(i))
+            {
+                CheckDemoRecording(i);
+            }
+        }
+    }
 }
 
 public void SOAP_StopDeathMatching()
