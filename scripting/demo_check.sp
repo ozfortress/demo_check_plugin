@@ -23,9 +23,10 @@ public Plugin:myinfo =
     #endif
     author = "Shigbeard",
     description = "Checks if a player is recording a demo",
-    version = "1.1.3",
+    version = "1.1.4",
     url = "https://ozfortress.com/"
 };
+
 
 ConVar g_bDemoCheckEnabled;
 ConVar g_bDemoCheckOnReadyUp; // Requires SoapDM
@@ -35,6 +36,7 @@ ConVar g_bDemoCheckAnnounce;
 ConVar g_bDemoCheckAnnounceDiscord; // Requires Discord
 ConVar g_HostName;
 ConVar g_HostPort;
+bool g_AnnouncedClients[MAXPLAYERS + 1];
 #endif
 ConVar g_bDemoCheckAnnounceTextFile; // Dumps to a text file
 
@@ -47,14 +49,12 @@ public void OnPluginStart()
 
     g_bDemoCheckWarn = CreateConVar("sm_democheck_warn", "0", " Set the plugin into warning only mode.", FCVAR_NOTIFY, true, 0.0, true, 1.0);
     g_bDemoCheckAnnounce = CreateConVar("sm_democheck_announce", "1", "Announce passed demo checks to chat", FCVAR_NOTIFY, true, 0.0, true, 1.0);
-    #if !defined NO_DISCORD
-        g_bDemoCheckAnnounceDiscord = CreateConVar("sm_democheck_announce_discord", "0", "Announce failed demo checks to discord", FCVAR_NOTIFY, true, 0.0, true, 1.0);
-        g_HostName = FindConVar("hostname");
-        g_HostPort = FindConVar("hostport");
-    #endif
+#if !defined NO_DISCORD
+    g_bDemoCheckAnnounceDiscord = CreateConVar("sm_democheck_announce_discord", "0", "Announce failed demo checks to discord", FCVAR_NOTIFY, true, 0.0, true, 1.0);
+    g_HostName = FindConVar("hostname");
+    g_HostPort = FindConVar("hostport");
+#endif
     g_bDemoCheckAnnounceTextFile = CreateConVar("sm_democheck_announce_textfile", "0", "Dump failed demo checks to a text file", FCVAR_NOTIFY, true, 0.0, true, 1.0);
-
-    AutoExecConfig(true, "democheck");
 
     RegServerCmd("sm_democheck", Cmd_DemoCheck_Console, "Check if a player is recording a demo", 0);
     RegServerCmd("sm_democheck_enable", Cmd_DemoCheckEnable_Console, "Enable demo check", 0);
@@ -105,6 +105,13 @@ public void OnClientPutInServer(int client)
         }
     }
 }
+
+#if !defined NO_DISCORD
+public void OnClientDisconnect(int client)
+{
+    g_AnnouncedClients[client] = false;
+}
+#endif
 
 public void OnDemoCheckEnabledChange(ConVar convar, const char[] oldValue, const char[] oldFloatValue)
 {
@@ -261,6 +268,9 @@ public void OnDSAutoDeleteCheck(QueryCookie cookie, int client, ConVarQueryResul
         GetClientName(client, sName, sizeof(sName));
         if (GetConVarBool(g_bDemoCheckWarn))
         {
+            #if !defined NO_DISCORD
+            Log_Incident(client, GetConVarBool(g_bDemoCheckWarn));
+            #endif
             if (GetConVarBool(g_bDemoCheckAnnounce))
             {
                 CPrintToChatAll(DEMOCHECK_TAG ... "%t", "kicked_announce_disabled", sName);
@@ -279,15 +289,15 @@ public void OnDSAutoDeleteCheck(QueryCookie cookie, int client, ConVarQueryResul
     }
 }
 
-public Action Timer_KickClient(Handle timer, int client)
+public void Log_Incident(int client, bool warn)
 {
-    if (!IsClientInGame(client))
-    {
-        return Plugin_Stop;
-    }
 #if !defined NO_DISCORD
     if (GetConVarBool(g_bDemoCheckAnnounceDiscord))
     {
+        if (g_AnnouncedClients[client])
+        {
+            return;
+        }
         char sName[64];
         char sSteamID[64];
         char sProfileURL[64];
@@ -320,7 +330,15 @@ public Action Timer_KickClient(Handle timer, int client)
         iServerPort = GetConVarInt(g_HostPort);
         SteamWorks_GetPublicIP(iServerIP);
         Format(sServerIP, sizeof(sServerIP), "%i.%i.%i.%i:%i", iServerIP[0], iServerIP[1], iServerIP[2], iServerIP[3], iServerPort);
-        Format(sMsg, sizeof(sMsg), "[Demo Check] %t", "discord_democheck", sName, sSteamID, sProfileURL, sServerName, sServerIP);
+        if (warn)
+        {
+            g_AnnouncedClients[client] = true;
+            Format(sMsg, sizeof(sMsg), "[Demo Check] %t", "discord_democheck_warn", sName, sSteamID, sProfileURL, sServerName, sServerIP);
+        }
+        else
+        {
+            Format(sMsg, sizeof(sMsg), "[Demo Check] %t", "discord_democheck", sName, sSteamID, sProfileURL, sServerName, sServerIP);
+        }
         Discord_SendMessage("democheck", sMsg);
     }
 #endif
@@ -337,11 +355,28 @@ public Action Timer_KickClient(Handle timer, int client)
         Format(sProfileURL, sizeof(sProfileURL), "https://steamcommunity.com/profiles/%s", sProfileURL);
         GetClientName(client, sName, sizeof(sName));
         char sMsg[512];
-        Format(sMsg, sizeof(sMsg), "[Demo Check] %t", sName, sSteamID, sProfileURL, sDateTime);
+        if (warn)
+        {
+            Format(sMsg, sizeof(sMsg), "[Demo Check] %t", "logs_democheck", sName, sSteamID, sProfileURL, sDateTime);
+        }
+        else
+        {
+            Format(sMsg, sizeof(sMsg), "[Demo Check] (Warn) %t", "logs_democheck_warn",sName, sSteamID, sProfileURL, sDateTime);
+        }
         Handle file = OpenFile("democheck.log", "a");
         WriteFileLine(file, sMsg);
         CloseHandle(file);
     }
+}
+
+public Action Timer_KickClient(Handle timer, int client)
+{
+    if (!IsClientInGame(client))
+    {
+        return Plugin_Stop;
+    }
+    Log_Incident(client, GetConVarBool(g_bDemoCheckWarn));
+
     KickClient(client, "[Demo Check] %t", "kicked");
     return Plugin_Stop;
 }

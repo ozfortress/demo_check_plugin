@@ -53,11 +53,24 @@
         "en"    "[{1} ({2})]({3}) failed the demo check at {4} - `{5}`"
     }
 
+    "discord_democheck_warn"
+    {
+        "#format" "{1:s},{2:s},{3:s},{4:s},{5:s}"
+        "en"    "[{1} ({2})]({3}) failed the demo check (in warn only mode) at {4} - `{5}`"
+    }
+
     "logs_democheck"
     {
         "#format" "{1:s},{2:s},{3:s},{4:s}"
         "en"    "{4} - {1} ({2}) [{3}] failed the demo check"
     }
+
+    "logs_democheck_warn"
+    {
+        "#format" "{1:s},{2:s},{3:s},{4:s}"
+        "en"    "{4} - {1} ({2}) [{3}] failed the demo check (in warn only mode)"
+    }
+
     "plugin_enabled_check_all"
     {
         "en"    "Plugin Started and Demo Checking has been enabled. Testing all users in the server."

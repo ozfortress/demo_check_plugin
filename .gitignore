@@ -1,2 +1,4 @@
 # ignore my ide
 .vscode
+# ignore my compile script
+compile.bat
