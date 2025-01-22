@@ -75,4 +75,10 @@
     {
         "en"    "Plugin Started and Demo Checking has been enabled. Testing all users in the server."
     }
+
+    "plugin_authid_failed"
+    {
+        "#format" "{1:s},{2:s}"
+        "en"    "Couldn't validate SteamID for {1}, GetClientAuthId returned {2}. Thanks SourceMod!"
+    }
 }

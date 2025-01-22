@@ -23,7 +23,7 @@ public Plugin:myinfo =
     #endif
     author = "Shigbeard",
     description = "Checks if a player is recording a demo",
-    version = "1.1.4",
+    version = "1.1.5",
     url = "https://ozfortress.com/"
 };
 
@@ -306,8 +306,19 @@ public void Log_Incident(int client, bool warn)
         int iServerPort;
         char sServerIP[64];
         GetClientName(client, sName, sizeof(sName));
-        GetClientAuthId(client, AuthId_Steam2, sSteamID, sizeof(sSteamID));
-        GetClientAuthId(client, AuthId_SteamID64, sProfileURL, sizeof(sProfileURL));
+        bool success = GetClientAuthId(client, AuthId_Steam2, sSteamID, sizeof(sSteamID));
+        bool success2 = GetClientAuthId(client, AuthId_SteamID64, sProfileURL, sizeof(sProfileURL));
+        if (success == false || success2 == false)
+        {
+            // log to error console that we couldn't get the client's auth id.
+            if (strcmp(sSteamID), "STEAM_ID_STOP_IGNORING_RETVALS" == 0) // they are the same string
+            {
+                PrintToConsole("[Demo Check] Hey Sourcemod, do you mind not being a dick?");
+            }
+            ThrowError("[Demo Check] %t", "plugin_authid_failed", sName, sSteamID);
+            // Execution stops here, but we return anyway just to be sure
+            return;
+        }
         Format(sProfileURL, sizeof(sProfileURL), "https://steamcommunity.com/profiles/%s", sProfileURL);
         char sMsg[512];
         if (g_HostName == INVALID_HANDLE)
@@ -350,8 +361,19 @@ public void Log_Incident(int client, bool warn)
         char sDateTime[64];
         FormatTime(sDateTime, sizeof(sDateTime), "%Y-%m-%d %H:%M:%S");
         GetClientName(client, sName, sizeof(sName));
-        GetClientAuthId(client, AuthId_Steam2, sSteamID, sizeof(sSteamID));
-        GetClientAuthId(client, AuthId_SteamID64, sProfileURL, sizeof(sProfileURL));
+        bool success = GetClientAuthId(client, AuthId_Steam2, sSteamID, sizeof(sSteamID));
+        bool success2 = GetClientAuthId(client, AuthId_SteamID64, sProfileURL, sizeof(sProfileURL));
+        if (success == false || success2 == false)
+        {
+            // log to error console that we couldn't get the client's auth id.
+            if (strcmp(sSteamID), "STEAM_ID_STOP_IGNORING_RETVALS" == 0) // they are the same string
+            {
+                PrintToConsole("[Demo Check] Hey Sourcemod, do you mind not being a dick?");
+            }
+            ThrowError("[Demo Check] %t", "plugin_authid_failed", sName, sSteamID);
+            // Execution stops here, but we return anyway just to be sure
+            return;
+        }
         Format(sProfileURL, sizeof(sProfileURL), "https://steamcommunity.com/profiles/%s", sProfileURL);
         GetClientName(client, sName, sizeof(sName));
         char sMsg[512];
