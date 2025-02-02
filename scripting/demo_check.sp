@@ -215,16 +215,16 @@ public Action CheckDemoRecording(int client)
 
 public void OnDSEnableCheck(QueryCookie cookie, int client, ConVarQueryResult result, const char[] cvarName, const char[] value)
 {
-    if (StrEqual(value, "3"))
+    if (StrEqual(value, "3") || StrEqual(value, "2"))
     {
         if (GetConVarBool(g_bDemoCheckAnnounce))
         {
-            CPrintToChat(client, DEMOCHECK_TAG ... "%t", "ds_enabled 3");
+            CPrintToChat(client, DEMOCHECK_TAG ... "%t", "ds_enabled 2 or 3");
         }
     }
     else if(StrEqual(value, "0"))
     {
-        PrintToConsole(client, "[Demo Check] %t", "ds_enabled 1 or 2");
+        PrintToConsole(client, "[Demo Check] %t", "ds_enabled 1");
         PrintToConsole(client, "[Demo Check] %t", "docs");
         char sName[64];
         GetClientName(client, sName, sizeof(sName));
@@ -311,9 +311,9 @@ public void Log_Incident(int client, bool warn)
         if (success == false || success2 == false)
         {
             // log to error console that we couldn't get the client's auth id.
-            if (strcmp(sSteamID), "STEAM_ID_STOP_IGNORING_RETVALS" == 0) // they are the same string
+            if (strcmp(sSteamID, "STEAM_ID_STOP_IGNORING_RETVALS") == 0) // they are the same string
             {
-                PrintToConsole("[Demo Check] Hey Sourcemod, do you mind not being a dick?");
+                PrintToServer("[Demo Check] Hey Sourcemod, do you mind not being a dick?");
             }
             ThrowError("[Demo Check] %t", "plugin_authid_failed", sName, sSteamID);
             // Execution stops here, but we return anyway just to be sure
@@ -366,9 +366,9 @@ public void Log_Incident(int client, bool warn)
         if (success == false || success2 == false)
         {
             // log to error console that we couldn't get the client's auth id.
-            if (strcmp(sSteamID), "STEAM_ID_STOP_IGNORING_RETVALS" == 0) // they are the same string
+            if (strcmp(sSteamID, "STEAM_ID_STOP_IGNORING_RETVALS") == 0) // they are the same string
             {
-                PrintToConsole("[Demo Check] Hey Sourcemod, do you mind not being a dick?");
+                PrintToServer("[Demo Check] Hey Sourcemod, do you mind not being a dick?");
             }
             ThrowError("[Demo Check] %t", "plugin_authid_failed", sName, sSteamID);
             // Execution stops here, but we return anyway just to be sure

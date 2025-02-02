@@ -12,13 +12,13 @@
     {
         "en"    "ds_enabled is set to 0, you are not recording a demo."
     }
-    "ds_enabled 1 or 2"
+    "ds_enabled 1"
     {
-        "en"    "ds_enabled is set to 1 or 2, you are not recording a demo correctly."
+        "en"    "ds_enabled is set to 1, you are only recording Valve Competitive Demos."
     }
-    "ds_enabled 3"
+    "ds_enabled 2 or 3"
     {
-        "en"    "ds_enabled is set to 3, you are recording a demo."
+        "en"    "ds_enabled is set to 2 or 3, you are recording a demo."
     }
     "ds_autodelete 1"
     {
