@@ -71,7 +71,7 @@
         "en"    "{4} - {1} ({2}) [{3}] failed the demo check (in warn only mode)"
     }
 
-    "plugin_enabled_check_all"
+    "plugin_start_check_all"
     {
         "en"    "Plugin Started and Demo Checking has been enabled. Testing all users in the server."
     }
