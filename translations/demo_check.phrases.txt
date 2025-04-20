@@ -35,7 +35,7 @@
     "kicked_announce_disabled"
     {
         "#format" "{1:s}"
-        "en"    "{red}Warning! {lime}{1}{white} does not appear to be auto-recording demos correctly. If this is a match, warnings must be disabled."
+        "en"    "{red}Warning! {lime}{1}{white} does not appear to be auto-recording demos correctly. If this is a match, please ensure you are recording a demo."
     }
     "kicked_announce"
     {
