@@ -396,8 +396,6 @@ public void Log_Incident(int client, bool warn, char[] failType)
         char sName[64];
         char sSteamID[64];
         char sProfileURL[64];
-        char sDateTime[64];
-        FormatTime(sDateTime, sizeof(sDateTime), "%Y-%m-%d %H:%M:%S");
         GetClientName(client, sName, sizeof(sName));
         bool success = GetClientAuthId(client, AuthId_Steam2, sSteamID, sizeof(sSteamID));
         bool success2 = GetClientAuthId(client, AuthId_SteamID64, sProfileURL, sizeof(sProfileURL));
