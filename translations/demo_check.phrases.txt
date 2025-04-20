@@ -73,7 +73,7 @@
 
     "plugin_start_check_all"
     {
-        "en"    "Plugin Started and Demo Checking has been enabled. Testing all users in the server."
+        "en"    "Demo Check - Plugin Started and Demo Checking has been enabled. Testing all users in the server."
     }
 
     "plugin_authid_failed"
