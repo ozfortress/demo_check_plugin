@@ -417,11 +417,11 @@ public void Log_Incident(int client, bool warn, char[] failType)
         char sMsg[512];
         if (warn)
         {
-        Format(sMsg, sizeof(sMsg), "[Demo Check] %t", "logs_democheck", sName, sSteamID, sProfileURL, sDateTime, failType);
+        Format(sMsg, sizeof(sMsg), "[Demo Check] %t", "logs_democheck", sName, sSteamID, sProfileURL, failType);
         }
         else
         {
-        Format(sMsg, sizeof(sMsg), "[Demo Check] (Warn) %t", "logs_democheck_warn",sName, sSteamID, sProfileURL, sDateTime, failType);
+        Format(sMsg, sizeof(sMsg), "[Demo Check] (Warn) %t", "logs_democheck_warn",sName, sSteamID, sProfileURL, failType);
         }
     LogToGame(sMsg)
 }
