@@ -88,7 +88,7 @@ public void OnPluginStart()
     // Perform a check on all players when the plugin is loaded
     if (GetConVarBool(g_bDemoCheckEnabled))
     {
-        PrintToChatAll(DEMOCHECK_TAG ... "%t", "plugin_start_check_all");
+        PrintToChatAll("%t", "plugin_start_check_all");
         for (int i = 1; i <= MaxClients; i++)
         {
             if (IsClientInGame(i) && !IsFakeClient(i))
