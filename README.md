@@ -5,7 +5,7 @@ This plugin is used to check if players are recording demos or not.
 
 ## Compiling
 
-All includes and extensions are bundled with this repository. Special thanks to [Dr. McKay](https://github.com/DoctorMcKay/sourcemod-plugins/blob/master/scripting/include/morecolors.inc) and [Sapphonie](https://github.com/sapphonie/StAC-tf2) from whom I shamelessly stole morecolors.inc and SteamWorks/discord.inc (plus extensions) from.
+All includes and extensions are bundled with this repository. 
 
 Note: Don't like Discord? You can compile without Discord by passing `NO_DISCORD=true` to spcomp.
 
@@ -25,7 +25,7 @@ Note: Don't like Discord? You can compile without Discord by passing `NO_DISCORD
 The plugin has a few cvars that can be configured:
 
 - `sm_democheck_enabled <0/1>` - Enable or disable the plugin. Default: `1`
-- `sm_democheck_onreadyup <0/1>` - Performs an additional check at ready up. Requires SoapDM to be running. Default: `0`
+- `sm_democheck_onreadyup <0/1>` - Performs an additional check at ready up. Default: `1`
 - `sm_democheck_warn <0/1>` - Set the plugin into warning only mode. Default: `0`. If enabled, players will be warned if they are not recording demos, but will not be kicked.
 - `sm_democheck_announce_textfile <0/1>` - Log kicks to a text file (democheck.log). Default: `0`
 
@@ -74,6 +74,10 @@ The plugin will check if the following convars are set on the client
 If these convars are not set, they will be kicked from the server with a message telling them to set the convars.
 
 At this stage, the plugin only performs this check when manually triggered, when enabled by an admin (or by the config), or when a player joins while the plugin is in it's enabled state.
+
+## Special Thanks 
+- [Dr. McKay](https://github.com/DoctorMcKay/) - [morecolors.inc](https://github.com/DoctorMcKay/sourcemod-plugins/blob/master/scripting/include/morecolors.inc)
+- [Sapphonie](https://github.com/sapphonie) - [discord.inc](https://github.com/sapphonie/StAC-tf2/blob/master/scripting/include/discord.inc) & [SteamWorks](https://github.com/sapphonie/StAC-tf2/blob/master/scripting/include/SteamWorks.inc) & [SOAP-TF2DM](https://github.com/sapphonie/SOAP-TF2DM)
 
 ## License
 

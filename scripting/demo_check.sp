@@ -21,12 +21,15 @@ public Plugin:myinfo =
     #else
     name = "Demo Check (No Discord)",
     #endif
-    author = "Shigbeard",
+    author = "Shigbeard, Aad",
     description = "Checks if a player is recording a demo",
-    version = "1.1.7",
+    version = "1.1.8",
     url = "https://ozfortress.com/"
 };
 
+#define RED                 0
+#define BLU                 1
+#define TEAM_OFFSET         2
 
 ConVar g_bDemoCheckEnabled;
 ConVar g_bDemoCheckOnReadyUp; // Requires SoapDM
@@ -40,12 +43,17 @@ bool g_AnnouncedClients[MAXPLAYERS + 1];
 #endif
 ConVar g_bDemoCheckAnnounceTextFile; // Dumps to a text file
 
+bool teamReadyState[2];
+bool pregame;
+Handle redPlayersReady;
+Handle bluePlayersReady;
+Handle g_readymode_min;
 public void OnPluginStart()
 {
     LoadTranslations("demo_check.phrases");
 
     g_bDemoCheckEnabled = CreateConVar("sm_democheck_enabled", "1", "Enable demo check", FCVAR_NOTIFY, true, 0.0, true, 1.0);
-    g_bDemoCheckOnReadyUp = CreateConVar("sm_democheck_onreadyup", "0", "Check if all players are recording a demo when both teams ready up - requires SoapDM", FCVAR_NOTIFY, true, 0.0, true, 1.0);
+    g_bDemoCheckOnReadyUp = CreateConVar("sm_democheck_onreadyup", "1", "Check if all players are recording a demo when both teams ready up", FCVAR_NOTIFY, true, 0.0, true, 1.0);
 
     g_bDemoCheckWarn = CreateConVar("sm_democheck_warn", "0", " Set the plugin into warning only mode.", FCVAR_NOTIFY, true, 0.0, true, 1.0);
     g_bDemoCheckAnnounce = CreateConVar("sm_democheck_announce", "1", "Announce passed demo checks to chat", FCVAR_NOTIFY, true, 0.0, true, 1.0);
@@ -62,14 +70,22 @@ public void OnPluginStart()
     RegServerCmd("sm_democheck_all", Cmd_DemoCheckAll_Console, "Check if all players are recording a demo", 0);
 
     HookConVarChange(g_bDemoCheckEnabled, OnDemoCheckEnabledChange)
+    g_readymode_min = FindConVar("mp_tournament_readymode_min");
 
+    // Listen for player readying or unreadying.
+    AddCommandListener(Listener_TournamentPlayerReadystate, "tournament_player_readystate");
+    HookEvent("tournament_stateupdate", Event_TournamentStateUpdate);
+
+    redPlayersReady = CreateArray();
+    bluePlayersReady = CreateArray();
+    
     // Perform a check on all players when the plugin is loaded
     if (GetConVarBool(g_bDemoCheckEnabled))
     {
         PrintToChatAll(DEMOCHECK_TAG ... "%t", "plugin_start_check_all");
         for (int i = 1; i <= MaxClients; i++)
         {
-            if (IsClientInGame(i))
+            if (IsClientInGame(i) && !IsFakeClient(i))
             {
                 CheckDemoRecording(i);
             }
@@ -77,27 +93,19 @@ public void OnPluginStart()
     }
 }
 
-public void SOAP_StopDeathMatching()
-// This forward is called by SoapDM_Tournament whenever both teams have readied up
-// SoapDM uses it as an opportunity to execute a config file to unload a series of plugins
-// We use it as an opportunity to check demo settings.
+public void OnMapStart()
 {
-    if (GetConVarBool(g_bDemoCheckOnReadyUp))
-    {
-        for (int i = 1; i <= MaxClients; i++)
-        {
-            if (IsClientInGame(i))
-            {
-                CheckDemoRecording(i);
-            }
-        }
-    }
+    teamReadyState[RED] = false;
+    teamReadyState[BLU] = false;
+
+    pregame = false;
+    StartPregaming();
 }
 
 public void OnClientPutInServer(int client)
 // Check a player once they've joined the game. We wait until they've fully connected.
 {
-    if (IsClientInGame(client))
+    if (IsClientInGame(client) && !IsFakeClient(client))
     {
         if (GetConVarBool(g_bDemoCheckEnabled))
         {
@@ -123,7 +131,7 @@ public void OnDemoCheckEnabledChange(ConVar convar, const char[] oldValue, const
         }
         for (int i = 1; i <= MaxClients; i++)
         {
-            if (IsClientInGame(i))
+            if (IsClientInGame(i) && !IsFakeClient(i))
             {
                 CheckDemoRecording(i);
             }
@@ -153,7 +161,7 @@ public Action Cmd_DemoCheck_Console(int args)
         return Plugin_Handled;
     }
 
-    if (!IsClientInGame(target))
+    if (!IsClientInGame(target) && !IsFakeClient(target))
     {
         PrintToServer("[Demo Check] Target is not in game.");
         return Plugin_Handled;
@@ -169,7 +177,7 @@ public Action Cmd_DemoCheckEnable_Console(int args)
     PrintToServer("[Demo Check] Demo check enabled.");
     for (int i = 1; i <= MaxClients; i++)
     {
-        if (IsClientInGame(i))
+        if (IsClientInGame(i) && !IsFakeClient(i))
         {
             CheckDemoRecording(i);
         }
@@ -188,7 +196,7 @@ public Action Cmd_DemoCheckAll_Console(int args)
 {
     for (int i = 1; i <= MaxClients; i++)
     {
-        if (IsClientInGame(i))
+        if (IsClientInGame(i) && !IsFakeClient(i))
         {
             CheckDemoRecording(i);
         }
@@ -199,7 +207,7 @@ public Action Cmd_DemoCheckAll_Console(int args)
 
 public Action CheckDemoRecording(int client)
 {
-    if (!IsClientInGame(client))
+    if (!IsClientInGame(client) && !IsFakeClient(client))
     {
         return Plugin_Stop;
     }
@@ -222,7 +230,7 @@ public void OnDSEnableCheck(QueryCookie cookie, int client, ConVarQueryResult re
             CPrintToChat(client, DEMOCHECK_TAG ... "%t", "ds_enabled 2 or 3");
         }
     }
-    else if(StrEqual(value, "0"))
+    else if(StrEqual(value, "1"))
     {
         PrintToConsole(client, "[Demo Check] %t", "ds_enabled 1");
         PrintToConsole(client, "[Demo Check] %t", "docs");
@@ -245,6 +253,7 @@ public void OnDSEnableCheck(QueryCookie cookie, int client, ConVarQueryResult re
         PrintToConsole(client, "[Demo Check] %t", "ds_enabled 0");
         PrintToConsole(client, "[Demo Check] %t", "docs");
         char sName[64];
+        GetClientName(client, sName, sizeof(sName));
         if (GetConVarBool(g_bDemoCheckWarn))
         {
             if (GetConVarBool(g_bDemoCheckAnnounce))
@@ -393,7 +402,7 @@ public void Log_Incident(int client, bool warn)
 
 public Action Timer_KickClient(Handle timer, int client)
 {
-    if (!IsClientInGame(client))
+    if (!IsClientInGame(client) && !IsFakeClient(client))
     {
         return Plugin_Stop;
     }
@@ -401,4 +410,100 @@ public Action Timer_KickClient(Handle timer, int client)
 
     KickClient(client, "[Demo Check] %t", "kicked");
     return Plugin_Stop;
+}
+
+public void Event_TournamentStateUpdate(Handle event, const char[] name, bool dontBroadcast)
+{
+    // significantly more robust way of getting team ready status
+    // the != 0 converts the result to a bool
+    teamReadyState[RED] = GameRules_GetProp("m_bTeamReady", 1, 2) != 0;
+    teamReadyState[BLU] = GameRules_GetProp("m_bTeamReady", 1, 3) != 0;
+
+    // If both teams are ready, StopPregaming.
+    if (teamReadyState[RED] && teamReadyState[BLU])
+    {
+        StopPregaming();
+    }
+    // don't start deathmatching again if we're already pregame!
+    else if (!pregame)
+    {
+        // One or more of the teams isn't ready, StartPregaming.
+        StartPregaming();
+    }
+    else
+    {
+        if (GetConVarBool(g_bDemoCheckOnReadyUp))
+        {
+            for (int i = 1; i <= MaxClients; i++)
+            {
+                if (IsClientInGame(i) && !IsFakeClient(i))
+                {
+                    CheckDemoRecording(i);
+                }
+            }
+        }
+    }
+}
+
+void StopPregaming()
+{
+    ClearArray(redPlayersReady);
+    ClearArray(bluePlayersReady);
+    pregame = false;
+
+    if (GetConVarBool(g_bDemoCheckOnReadyUp))
+    {
+        for (int i = 1; i <= MaxClients; i++)
+        {
+            if (IsClientInGame(i) && !IsFakeClient(i))
+            {
+                CheckDemoRecording(i);
+            }
+        }
+    }
+}
+
+void StartPregaming()
+{
+    ClearArray(redPlayersReady);
+    ClearArray(bluePlayersReady);
+    pregame = true;
+}
+
+public Action Listener_TournamentPlayerReadystate(int client, const char[] command, int args)
+{
+    char arg[4];
+    int min = GetConVarInt(g_readymode_min);
+    int clientid = GetClientUserId(client);
+    int clientTeam = GetClientTeam(client);
+
+    GetCmdArg(1, arg, sizeof(arg));
+    if (StrEqual(arg, "1"))
+    {
+        if (clientTeam - TEAM_OFFSET == 0)
+        {
+            PushArrayCell(redPlayersReady, clientid);
+        }
+        else if (clientTeam - TEAM_OFFSET == 1)
+        {
+            PushArrayCell(bluePlayersReady, clientid);
+        }
+    }
+    else if (StrEqual(arg, "0"))
+    {
+        if (clientTeam - TEAM_OFFSET == 0)
+        {
+            RemoveFromArray(redPlayersReady, FindValueInArray(redPlayersReady, clientid));
+        }
+        else if (clientTeam - TEAM_OFFSET == 1)
+        {
+            RemoveFromArray(bluePlayersReady, FindValueInArray(bluePlayersReady, clientid));
+        }
+    }
+    if (GetArraySize(redPlayersReady) == min && GetArraySize(bluePlayersReady) == min)
+    {
+        StopPregaming();
+    }
+
+    return Plugin_Continue;
 }
