@@ -59,7 +59,7 @@ public void OnPluginStart()
     g_bDemoCheckEnabled = CreateConVar("sm_democheck_enabled", "1", "Enable demo check", FCVAR_NOTIFY, true, 0.0, true, 1.0);
     g_bDemoCheckOnReadyUp = CreateConVar("sm_democheck_onreadyup", "1", "Check if all players are recording a demo when both teams ready up", FCVAR_NOTIFY, true, 0.0, true, 1.0);
 
-    g_bDemoCheckWarn = CreateConVar("sm_democheck_warn", "0", " Set the plugin into warning only mode.", FCVAR_NOTIFY, true, 0.0, true, 1.0);
+    g_bDemoCheckWarn = CreateConVar("sm_democheck_warn", "1", " Set the plugin into warning only mode.", FCVAR_NOTIFY, true, 0.0, true, 1.0);
     g_bDemoCheckAnnounce = CreateConVar("sm_democheck_announce", "1", "Announce passed demo checks to chat", FCVAR_NOTIFY, true, 0.0, true, 1.0);
 #if !defined NO_DISCORD
     g_bDemoCheckAnnounceDiscord = CreateConVar("sm_democheck_announce_discord", "0", "Announce failed demo checks to discord", FCVAR_NOTIFY, true, 0.0, true, 1.0);
