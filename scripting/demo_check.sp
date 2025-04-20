@@ -72,6 +72,8 @@ public void OnPluginStart()
     HookConVarChange(g_bDemoCheckEnabled, OnDemoCheckEnabledChange)
     g_readymode_min = FindConVar("mp_tournament_readymode_min");
 
+    HookConVarChange(g_bDemoCheckWarn, OnDemoCheckWarn);
+
     // Listen for player readying or unreadying.
     AddCommandListener(Listener_TournamentPlayerReadystate, "tournament_player_readystate");
     HookEvent("tournament_stateupdate", Event_TournamentStateUpdate);
@@ -142,6 +144,17 @@ public void OnDemoCheckEnabledChange(ConVar convar, const char[] oldValue, const
         if (GetConVarBool(g_bDemoCheckAnnounce))
         {
             CPrintToChatAll(DEMOCHECK_TAG ... "%t", "disabled");
+        }
+    }
+}
+
+public void OnDemoCheckWarn(ConVar convar, const char[] oldValue, const char[] oldFloatValue)
+{
+    for (int i = 1; i <= MaxClients; i++)
+    {
+        if (IsClientInGame(i) && !IsFakeClient(i))
+        {
+            CheckDemoRecording(i);
         }
     }
 }
