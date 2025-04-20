@@ -41,7 +41,6 @@ ConVar g_HostName;
 ConVar g_HostPort;
 bool g_AnnouncedClients[MAXPLAYERS + 1];
 #endif
-ConVar g_bDemoCheckAnnounceTextFile; // Dumps to a text file
 
 bool teamReadyState[2];
 bool pregame;
@@ -66,7 +65,6 @@ public void OnPluginStart()
     g_HostName = FindConVar("hostname");
     g_HostPort = FindConVar("hostport");
 #endif
-    g_bDemoCheckAnnounceTextFile = CreateConVar("sm_democheck_announce_textfile", "0", "Dump failed demo checks to a text file", FCVAR_NOTIFY, true, 0.0, true, 1.0);
 
     RegServerCmd("sm_democheck", Cmd_DemoCheck_Console, "Check if a player is recording a demo", 0);
     RegServerCmd("sm_democheck_enable", Cmd_DemoCheckEnable_Console, "Enable demo check", 0);
@@ -269,7 +267,7 @@ public void OnDSEnableCheck(QueryCookie cookie, int client, ConVarQueryResult re
         PrintToConsole(client, "[Demo Check] %t", "docs");
         char sName[64];
         GetClientName(client, sName, sizeof(sName));
-
+        Log_Incident(client, GetConVarBool(g_bDemoCheckWarn), "ds_enable");
         if (GetConVarBool(g_bDemoCheckWarn))
         {
             if (GetConVarBool(g_bDemoCheckAnnounce))
@@ -287,6 +285,7 @@ public void OnDSEnableCheck(QueryCookie cookie, int client, ConVarQueryResult re
         PrintToConsole(client, "[Demo Check] %t", "docs");
         char sName[64];
         GetClientName(client, sName, sizeof(sName));
+        Log_Incident(client, GetConVarBool(g_bDemoCheckWarn), "ds_enable");
         if (GetConVarBool(g_bDemoCheckWarn))
         {
             if (GetConVarBool(g_bDemoCheckAnnounce))
@@ -308,11 +307,9 @@ public void OnDSAutoDeleteCheck(QueryCookie cookie, int client, ConVarQueryResul
         PrintToConsole(client, "[Demo Check] %t", "docs");
         char sName[64];
         GetClientName(client, sName, sizeof(sName));
+        Log_Incident(client, GetConVarBool(g_bDemoCheckWarn), "ds_autodelete");
         if (GetConVarBool(g_bDemoCheckWarn))
         {
-            #if !defined NO_DISCORD
-            Log_Incident(client, GetConVarBool(g_bDemoCheckWarn));
-            #endif
             if (GetConVarBool(g_bDemoCheckAnnounce))
             {
                 CPrintToChatAll(DEMOCHECK_TAG ... "%t", "kicked_announce_disabled", sName);
@@ -331,7 +328,7 @@ public void OnDSAutoDeleteCheck(QueryCookie cookie, int client, ConVarQueryResul
     }
 }
 
-public void Log_Incident(int client, bool warn)
+public void Log_Incident(int client, bool warn, char[] failType)
 {
 #if !defined NO_DISCORD
     if (GetConVarBool(g_bDemoCheckAnnounceDiscord))
@@ -395,8 +392,7 @@ public void Log_Incident(int client, bool warn)
         Discord_SendMessage("democheck", sMsg);
     }
 #endif
-    if (GetConVarBool(g_bDemoCheckAnnounceTextFile))
-    {
+    
         char sName[64];
         char sSteamID[64];
         char sProfileURL[64];
@@ -421,16 +417,13 @@ public void Log_Incident(int client, bool warn)
         char sMsg[512];
         if (warn)
         {
-            Format(sMsg, sizeof(sMsg), "[Demo Check] %t", "logs_democheck", sName, sSteamID, sProfileURL, sDateTime);
+        Format(sMsg, sizeof(sMsg), "[Demo Check] %t", "logs_democheck", sName, sSteamID, sProfileURL, sDateTime, failType);
         }
         else
         {
-            Format(sMsg, sizeof(sMsg), "[Demo Check] (Warn) %t", "logs_democheck_warn",sName, sSteamID, sProfileURL, sDateTime);
+        Format(sMsg, sizeof(sMsg), "[Demo Check] (Warn) %t", "logs_democheck_warn",sName, sSteamID, sProfileURL, sDateTime, failType);
         }
-        Handle file = OpenFile("democheck.log", "a");
-        WriteFileLine(file, sMsg);
-        CloseHandle(file);
-    }
+    LogToGame(sMsg)
 }
 
 public Action Timer_KickClient(Handle timer, int client)
@@ -439,7 +432,6 @@ public Action Timer_KickClient(Handle timer, int client)
     {
         return Plugin_Stop;
     }
-    Log_Incident(client, GetConVarBool(g_bDemoCheckWarn));
 
     KickClient(client, "[Demo Check] %t", "kicked");
     return Plugin_Stop;
@@ -600,25 +592,25 @@ public void OnDSEnableCheckTimer(QueryCookie cookie, int client, ConVarQueryResu
     }
     else if(StrEqual(value, "1"))
     {
-        PrintToConsole(client, "[Demo Check] %t", "ds_enabled 1");
-        PrintToConsole(client, "[Demo Check] %t", "docs");
         char sName[64];
         GetClientName(client, sName, sizeof(sName));
 
         if (!GetConVarBool(g_bDemoCheckWarn))
         {
+            PrintToConsole(client, "[Demo Check] %t", "ds_enabled 1");
+            PrintToConsole(client, "[Demo Check] %t", "docs");
             CreateTimer(2.0, Timer_KickClient, client);
             CPrintToChatAll(DEMOCHECK_TAG ... "%t", "kicked_announce", sName);
         }
     }
     else
     {
-        PrintToConsole(client, "[Demo Check] %t", "ds_enabled 0");
-        PrintToConsole(client, "[Demo Check] %t", "docs");
         char sName[64];
         GetClientName(client, sName, sizeof(sName));
         if (!GetConVarBool(g_bDemoCheckWarn))
         {
+            PrintToConsole(client, "[Demo Check] %t", "ds_enabled 0");
+            PrintToConsole(client, "[Demo Check] %t", "docs");
             CreateTimer(2.0, Timer_KickClient, client);
             CPrintToChatAll(DEMOCHECK_TAG ... "%t", "kicked_announce", sName);
         }
@@ -629,12 +621,12 @@ public void OnDSAutoDeleteCheckTimer(QueryCookie cookie, int client, ConVarQuery
 {
     if (StrEqual(value, "1"))
     {
-        PrintToConsole(client, "[Demo Check] %t", "ds_autodelete 1");
-        PrintToConsole(client, "[Demo Check] %t", "docs");
         char sName[64];
         GetClientName(client, sName, sizeof(sName));
         if (!GetConVarBool(g_bDemoCheckWarn))
         {
+            PrintToConsole(client, "[Demo Check] %t", "ds_autodelete 1");
+            PrintToConsole(client, "[Demo Check] %t", "docs");
             CreateTimer(2.0, Timer_KickClient, client);
             CPrintToChatAll(DEMOCHECK_TAG ... "%t", "kicked_announce", sName);
         }
