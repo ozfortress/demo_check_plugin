@@ -23,7 +23,7 @@ public Plugin:myinfo =
     #endif
     author = "Shigbeard, Aad",
     description = "Checks if a player is recording a demo",
-    version = "1.1.8",
+    version = "1.2.0",
     url = "https://ozfortress.com/"
 };
 
@@ -48,6 +48,10 @@ bool pregame;
 Handle redPlayersReady;
 Handle bluePlayersReady;
 Handle g_readymode_min;
+
+Handle g_hDemoCheckTimer = INVALID_HANDLE;
+int g_iRealPlayerCount = 0;
+
 public void OnPluginStart()
 {
     LoadTranslations("demo_check.phrases");
@@ -90,8 +94,14 @@ public void OnPluginStart()
             if (IsClientInGame(i) && !IsFakeClient(i))
             {
                 CheckDemoRecording(i);
+                g_iRealPlayerCount++;
             }
         }
+    }
+
+    if (g_iRealPlayerCount > 0)
+    {
+        StartDemoCheckTimer();
     }
 }
 
@@ -112,16 +122,26 @@ public void OnClientPutInServer(int client)
         if (GetConVarBool(g_bDemoCheckEnabled))
         {
             CheckDemoRecording(client);
+            g_iRealPlayerCount++;
+            CheckAndStartTimer();
         }
     }
 }
 
-#if !defined NO_DISCORD
+
 public void OnClientDisconnect(int client)
 {
+#if !defined NO_DISCORD
     g_AnnouncedClients[client] = false;
-}
 #endif
+
+    if (!IsFakeClient(client))
+    {
+        g_iRealPlayerCount = (g_iRealPlayerCount > 0) ? g_iRealPlayerCount - 1 : 0;
+        CheckAndStopTimer();
+    }
+}
+
 
 public void OnDemoCheckEnabledChange(ConVar convar, const char[] oldValue, const char[] oldFloatValue)
 {
@@ -519,4 +539,110 @@ public Action Listener_TournamentPlayerReadystate(int client, const char[] comma
     }
 
     return Plugin_Continue;
+}
+
+public void CheckAndStartTimer()
+{
+    if (g_iRealPlayerCount > 0 && g_hDemoCheckTimer == INVALID_HANDLE)
+    {
+        StartDemoCheckTimer();
+    }
+}
+
+public void CheckAndStopTimer()
+{
+    if (g_iRealPlayerCount == 0 && g_hDemoCheckTimer != INVALID_HANDLE)
+    {
+        CloseHandle(g_hDemoCheckTimer);
+        g_hDemoCheckTimer = INVALID_HANDLE;
+    }
+}
+
+public void StartDemoCheckTimer()
+{
+    g_hDemoCheckTimer = CreateTimer(float_rand(15.0, 30.0), Timer_DemoCheckAll, _, TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE);
+}
+
+public Action Timer_DemoCheckAll(Handle timer)
+{
+    for (int i = 1; i <= MaxClients; i++)
+    {
+        if (IsClientInGame(i) && !IsFakeClient(i))
+        {
+            CheckDemoRecordingTimer(i);
+        }
+    }
+    return Plugin_Continue;
+}
+
+public Action CheckDemoRecordingTimer(int client)
+{
+    if (!IsClientInGame(client) && !IsFakeClient(client))
+    {
+        return Plugin_Stop;
+    }
+    if (!GetConVarBool(g_bDemoCheckEnabled))
+    {
+        return Plugin_Stop;
+    }
+
+    QueryClientConVar(client, "ds_enable", OnDSEnableCheckTimer);
+    QueryClientConVar(client, "ds_autodelete", OnDSAutoDeleteCheckTimer);
+    return Plugin_Continue;
+}
+
+
+public void OnDSEnableCheckTimer(QueryCookie cookie, int client, ConVarQueryResult result, const char[] cvarName, const char[] value)
+{
+    if (StrEqual(value, "3") || StrEqual(value, "2"))
+    {
+        //Do nothing, this is expected
+    }
+    else if(StrEqual(value, "1"))
+    {
+        PrintToConsole(client, "[Demo Check] %t", "ds_enabled 1");
+        PrintToConsole(client, "[Demo Check] %t", "docs");
+        char sName[64];
+        GetClientName(client, sName, sizeof(sName));
+
+        if (!GetConVarBool(g_bDemoCheckWarn))
+        {
+            CreateTimer(2.0, Timer_KickClient, client);
+            CPrintToChatAll(DEMOCHECK_TAG ... "%t", "kicked_announce", sName);
+        }
+    }
+    else
+    {
+        PrintToConsole(client, "[Demo Check] %t", "ds_enabled 0");
+        PrintToConsole(client, "[Demo Check] %t", "docs");
+        char sName[64];
+        GetClientName(client, sName, sizeof(sName));
+        if (!GetConVarBool(g_bDemoCheckWarn))
+        {
+            CreateTimer(2.0, Timer_KickClient, client);
+            CPrintToChatAll(DEMOCHECK_TAG ... "%t", "kicked_announce", sName);
+        }
+    }
+}
+
+public void OnDSAutoDeleteCheckTimer(QueryCookie cookie, int client, ConVarQueryResult result, const char[] cvarName, const char[] value)
+{
+    if (StrEqual(value, "1"))
+    {
+        PrintToConsole(client, "[Demo Check] %t", "ds_autodelete 1");
+        PrintToConsole(client, "[Demo Check] %t", "docs");
+        char sName[64];
+        GetClientName(client, sName, sizeof(sName));
+        if (!GetConVarBool(g_bDemoCheckWarn))
+        {
+            CreateTimer(2.0, Timer_KickClient, client);
+            CPrintToChatAll(DEMOCHECK_TAG ... "%t", "kicked_announce", sName);
+        }
+    }
+}
+
+float float_rand(float min, float max)
+{
+    float scale = GetURandomFloat();    /* [0, 1.0] */
+    return min + scale * ( max - min ); /* [min, max] */
 }
