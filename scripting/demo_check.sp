@@ -264,10 +264,7 @@ public void OnDSEnableCheck(QueryCookie cookie, int client, ConVarQueryResult re
 {
     if (StrEqual(value, "3") || StrEqual(value, "2"))
     {
-        if (GetConVarBool(g_bDemoCheckAnnounce))
-        {
-            CPrintToChat(client, DEMOCHECK_TAG ... "%t", "ds_enabled 2 or 3");
-        }
+        // Expected, show nothing
     }
     else if(StrEqual(value, "1"))
     {
@@ -281,6 +278,7 @@ public void OnDSEnableCheck(QueryCookie cookie, int client, ConVarQueryResult re
             if (GetConVarBool(g_bDemoCheckAnnounce))
             {
                 CPrintToChatAll(DEMOCHECK_TAG ... "%t", "kicked_announce_disabled", sName);
+                CPrintToChat(client, DEMOCHECK_TAG ... "%t", "ds_enabled 1");
             }
         } else {
             CreateTimer(2.0, Timer_KickClient, client);
@@ -299,6 +297,7 @@ public void OnDSEnableCheck(QueryCookie cookie, int client, ConVarQueryResult re
             if (GetConVarBool(g_bDemoCheckAnnounce))
             {
                 CPrintToChatAll(DEMOCHECK_TAG ... "%t", "kicked_announce_disabled", sName);
+                CPrintToChat(client, DEMOCHECK_TAG ... "%t", "ds_enabled 0");
             }
         } else {
             CreateTimer(2.0, Timer_KickClient, client);
@@ -321,6 +320,7 @@ public void OnDSAutoDeleteCheck(QueryCookie cookie, int client, ConVarQueryResul
             if (GetConVarBool(g_bDemoCheckAnnounce))
             {
                 CPrintToChatAll(DEMOCHECK_TAG ... "%t", "kicked_announce_disabled", sName);
+                CPrintToChat(client, DEMOCHECK_TAG ... "%t", "ds_autodelete 1");
             }
         } else {
             CreateTimer(2.0, Timer_KickClient, client);
@@ -329,10 +329,7 @@ public void OnDSAutoDeleteCheck(QueryCookie cookie, int client, ConVarQueryResul
     }
     else
     {
-        if (GetConVarBool(g_bDemoCheckAnnounce))
-        {
-            CPrintToChat(client, DEMOCHECK_TAG ... "%t", "ds_autodelete 0");
-        }
+        // Expected, show nothing
     }
 }
 
@@ -605,6 +602,7 @@ public void OnDSEnableCheckTimer(QueryCookie cookie, int client, ConVarQueryResu
             if (GetConVarBool(g_bDemoCheckAnnounce))
             {
                 CPrintToChatAll(DEMOCHECK_TAG ... "%t", "kicked_announce_disabled", sName);
+                CPrintToChat(client, DEMOCHECK_TAG ... "%t", "ds_enabled 1");
             }
             Log_Incident(client, GetConVarBool(g_bDemoCheckWarn), "ds_enable");
             PrintToConsole(client, "[Demo Check] %t", "ds_enabled 1");
@@ -628,6 +626,7 @@ public void OnDSEnableCheckTimer(QueryCookie cookie, int client, ConVarQueryResu
             if (GetConVarBool(g_bDemoCheckAnnounce))
             {
                 CPrintToChatAll(DEMOCHECK_TAG ... "%t", "kicked_announce_disabled", sName);
+                CPrintToChat(client, DEMOCHECK_TAG ... "%t", "ds_enabled 0");
             }
             Log_Incident(client, GetConVarBool(g_bDemoCheckWarn), "ds_enable");
             PrintToConsole(client, "[Demo Check] %t", "ds_enabled 0");
@@ -655,6 +654,7 @@ public void OnDSAutoDeleteCheckTimer(QueryCookie cookie, int client, ConVarQuery
             if (GetConVarBool(g_bDemoCheckAnnounce))
             {
                 CPrintToChatAll(DEMOCHECK_TAG ... "%t", "kicked_announce_disabled", sName);
+                CPrintToChat(client, DEMOCHECK_TAG ... "%t", "ds_autodelete 1");
             }
             Log_Incident(client, GetConVarBool(g_bDemoCheckWarn), "ds_autodelete");
             PrintToConsole(client, "[Demo Check] %t", "ds_autodelete 1");
