@@ -50,6 +50,8 @@ Handle g_readymode_min;
 
 Handle g_hDemoCheckTimer = INVALID_HANDLE;
 int g_iRealPlayerCount = 0;
+bool g_bWarnedClientDsEnable[MAXPLAYERS + 1]; // Tracks if client has already been warned
+bool g_bWarnedClientDsDelete[MAXPLAYERS + 1]; // Tracks if client has already been warned
 
 public void OnPluginStart()
 {
@@ -93,6 +95,8 @@ public void OnPluginStart()
             {
                 CheckDemoRecording(i);
                 g_iRealPlayerCount++;
+                g_bWarnedClientDsEnable[i] = false;
+                g_bWarnedClientDsDelete[i] = false;
             }
         }
     }
@@ -121,6 +125,8 @@ public void OnClientPutInServer(int client)
         {
             CheckDemoRecording(client);
             g_iRealPlayerCount++;
+            g_bWarnedClientDsEnable[client] = false;
+            g_bWarnedClientDsDelete[client] = false;
             CheckAndStartTimer();
         }
     }
@@ -136,6 +142,8 @@ public void OnClientDisconnect(int client)
     if (!IsFakeClient(client))
     {
         g_iRealPlayerCount = (g_iRealPlayerCount > 0) ? g_iRealPlayerCount - 1 : 0;
+        g_bWarnedClientDsEnable[client] = false;
+        g_bWarnedClientDsDelete[client] = false;
         CheckAndStopTimer();
     }
 }
@@ -393,34 +401,34 @@ public void Log_Incident(int client, bool warn, char[] failType)
     }
 #endif
     
-        char sName[64];
-        char sSteamID[64];
-        char sProfileURL[64];
-        GetClientName(client, sName, sizeof(sName));
-        bool success = GetClientAuthId(client, AuthId_Steam2, sSteamID, sizeof(sSteamID));
-        bool success2 = GetClientAuthId(client, AuthId_SteamID64, sProfileURL, sizeof(sProfileURL));
-        if (success == false || success2 == false)
+    char sName[64];
+    char sSteamID[64];
+    char sProfileURL[64];
+    GetClientName(client, sName, sizeof(sName));
+    bool success = GetClientAuthId(client, AuthId_Steam2, sSteamID, sizeof(sSteamID));
+    bool success2 = GetClientAuthId(client, AuthId_SteamID64, sProfileURL, sizeof(sProfileURL));
+    if (success == false || success2 == false)
+    {
+        // log to error console that we couldn't get the client's auth id.
+        if (strcmp(sSteamID, "STEAM_ID_STOP_IGNORING_RETVALS") == 0) // they are the same string
         {
-            // log to error console that we couldn't get the client's auth id.
-            if (strcmp(sSteamID, "STEAM_ID_STOP_IGNORING_RETVALS") == 0) // they are the same string
-            {
-                PrintToServer("[Demo Check] Hey Sourcemod, do you mind not being a dick?");
-            }
-            ThrowError("[Demo Check] %t", "plugin_authid_failed", sName, sSteamID);
-            // Execution stops here, but we return anyway just to be sure
-            return;
+            PrintToServer("[Demo Check] Hey Sourcemod, do you mind not being a dick?");
         }
-        Format(sProfileURL, sizeof(sProfileURL), "https://steamcommunity.com/profiles/%s", sProfileURL);
-        GetClientName(client, sName, sizeof(sName));
-        char sMsg[512];
-        if (warn)
-        {
+        ThrowError("[Demo Check] %t", "plugin_authid_failed", sName, sSteamID);
+        // Execution stops here, but we return anyway just to be sure
+        return;
+    }
+    Format(sProfileURL, sizeof(sProfileURL), "https://steamcommunity.com/profiles/%s", sProfileURL);
+    GetClientName(client, sName, sizeof(sName));
+    char sMsg[512];
+    if (warn)
+    {
         Format(sMsg, sizeof(sMsg), "[Demo Check] %t", "logs_democheck", sName, sSteamID, sProfileURL, failType);
-        }
-        else
-        {
+    }
+    else
+    {
         Format(sMsg, sizeof(sMsg), "[Demo Check] (Warn) %t", "logs_democheck_warn",sName, sSteamID, sProfileURL, failType);
-        }
+    }
     LogToGame(sMsg)
 }
 
@@ -592,11 +600,20 @@ public void OnDSEnableCheckTimer(QueryCookie cookie, int client, ConVarQueryResu
     {
         char sName[64];
         GetClientName(client, sName, sizeof(sName));
-
-        if (!GetConVarBool(g_bDemoCheckWarn))
+        if (!g_bWarnedClientDsEnable[client])
         {
+            if (GetConVarBool(g_bDemoCheckAnnounce))
+            {
+                CPrintToChatAll(DEMOCHECK_TAG ... "%t", "kicked_announce_disabled", sName);
+            }
+            Log_Incident(client, GetConVarBool(g_bDemoCheckWarn), "ds_enable");
             PrintToConsole(client, "[Demo Check] %t", "ds_enabled 1");
             PrintToConsole(client, "[Demo Check] %t", "docs");
+            g_bWarnedClientDsEnable[client] = true;
+        }
+        
+        if (!GetConVarBool(g_bDemoCheckWarn))
+        {
             CreateTimer(2.0, Timer_KickClient, client);
             CPrintToChatAll(DEMOCHECK_TAG ... "%t", "kicked_announce", sName);
         }
@@ -605,10 +622,21 @@ public void OnDSEnableCheckTimer(QueryCookie cookie, int client, ConVarQueryResu
     {
         char sName[64];
         GetClientName(client, sName, sizeof(sName));
-        if (!GetConVarBool(g_bDemoCheckWarn))
+
+        if (!g_bWarnedClientDsEnable[client])
         {
+            if (GetConVarBool(g_bDemoCheckAnnounce))
+            {
+                CPrintToChatAll(DEMOCHECK_TAG ... "%t", "kicked_announce_disabled", sName);
+            }
+            Log_Incident(client, GetConVarBool(g_bDemoCheckWarn), "ds_enable");
             PrintToConsole(client, "[Demo Check] %t", "ds_enabled 0");
             PrintToConsole(client, "[Demo Check] %t", "docs");
+            g_bWarnedClientDsEnable[client] = true;
+        }
+        
+        if (!GetConVarBool(g_bDemoCheckWarn))
+        {
             CreateTimer(2.0, Timer_KickClient, client);
             CPrintToChatAll(DEMOCHECK_TAG ... "%t", "kicked_announce", sName);
         }
@@ -621,10 +649,21 @@ public void OnDSAutoDeleteCheckTimer(QueryCookie cookie, int client, ConVarQuery
     {
         char sName[64];
         GetClientName(client, sName, sizeof(sName));
-        if (!GetConVarBool(g_bDemoCheckWarn))
+
+        if (!g_bWarnedClientDsDelete[client])
         {
+            if (GetConVarBool(g_bDemoCheckAnnounce))
+            {
+                CPrintToChatAll(DEMOCHECK_TAG ... "%t", "kicked_announce_disabled", sName);
+            }
+            Log_Incident(client, GetConVarBool(g_bDemoCheckWarn), "ds_autodelete");
             PrintToConsole(client, "[Demo Check] %t", "ds_autodelete 1");
             PrintToConsole(client, "[Demo Check] %t", "docs");
+            g_bWarnedClientDsDelete[client] = true;
+        }
+        
+        if (!GetConVarBool(g_bDemoCheckWarn))
+        {
             CreateTimer(2.0, Timer_KickClient, client);
             CPrintToChatAll(DEMOCHECK_TAG ... "%t", "kicked_announce", sName);
         }
