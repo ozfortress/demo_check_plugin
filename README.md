@@ -15,7 +15,7 @@ Note: Don't like Discord? You can compile without Discord by passing `NO_DISCORD
 
 ## Installation
 
-1. Download the plugin from the [releases page](https://github.com/ozfortres/demo-check-plugin/releases).
+1. Download the plugin from the [releases page](https://github.com/ozfortress/demo-check-plugin/releases).
 2. Install the `plugins/demo_check.smx` file or the `plugins/demo_check_no_discord.smx` file into your `tf/addons/sourcemod/plugins` directory.
 3. Install the `translations/demo_check.phrases.txt` file into your `tf/addons/sourcemod/translations` directory.
 4. Restart your server.
