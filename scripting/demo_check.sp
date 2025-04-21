@@ -32,7 +32,7 @@ public Plugin:myinfo =
 #define TEAM_OFFSET         2
 
 ConVar g_bDemoCheckEnabled;
-ConVar g_bDemoCheckOnReadyUp; // Requires SoapDM
+ConVar g_bDemoCheckOnReadyUp;
 ConVar g_bDemoCheckWarn;
 ConVar g_bDemoCheckAnnounce;
 #if !defined NO_DISCORD
@@ -67,7 +67,6 @@ public void OnPluginStart()
     g_HostName = FindConVar("hostname");
     g_HostPort = FindConVar("hostport");
 #endif
-
     RegServerCmd("sm_democheck", Cmd_DemoCheck_Console, "Check if a player is recording a demo", 0);
     RegServerCmd("sm_democheck_enable", Cmd_DemoCheckEnable_Console, "Enable demo check", 0);
     RegServerCmd("sm_democheck_disable", Cmd_DemoCheckDisable_Console, "Disable demo check", 0);
@@ -128,10 +127,31 @@ public void OnClientPutInServer(int client)
             g_bWarnedClientDsEnable[client] = false;
             g_bWarnedClientDsDelete[client] = false;
             CheckAndStartTimer();
+            CreateTimer(1.0, PluginCvarPrint, GetClientUserId(client), TIMER_FLAG_NO_MAPCHANGE);
         }
     }
 }
 
+public Action PluginCvarPrint(Handle timer, int userid)
+{
+    int client = GetClientOfUserId(userid);
+    if (client)
+    {
+        char demoCheckEnabled[16], demoCheckOnReadyUp[16], demoCheckWarn[16];
+
+        GetDemoCheckStatus(g_bDemoCheckEnabled, demoCheckEnabled, sizeof(demoCheckEnabled));
+        GetDemoCheckStatus(g_bDemoCheckOnReadyUp, demoCheckOnReadyUp, sizeof(demoCheckOnReadyUp));
+        GetDemoCheckStatus(g_bDemoCheckWarn, demoCheckWarn, sizeof(demoCheckWarn));
+        CPrintToChat(client, DEMOCHECK_TAG ... "%t", "join_cvar_check", demoCheckEnabled, demoCheckOnReadyUp, demoCheckWarn);
+    }
+    
+    return Plugin_Continue;
+}
+
+void GetDemoCheckStatus(ConVar convar, char[] buffer, int maxlen)
+{
+    Format(buffer, maxlen, GetConVarBool(convar) ? "Y" : "N");
+}
 
 public void OnClientDisconnect(int client)
 {
@@ -147,7 +167,6 @@ public void OnClientDisconnect(int client)
         CheckAndStopTimer();
     }
 }
-
 
 public void OnDemoCheckEnabledChange(ConVar convar, const char[] oldValue, const char[] oldFloatValue)
 {
@@ -242,7 +261,6 @@ public Action Cmd_DemoCheckAll_Console(int args)
     }
     return Plugin_Handled;
 }
-
 
 public Action CheckDemoRecording(int client)
 {
@@ -585,7 +603,6 @@ public Action CheckDemoRecordingTimer(int client)
     QueryClientConVar(client, "ds_autodelete", OnDSAutoDeleteCheckTimer);
     return Plugin_Continue;
 }
-
 
 public void OnDSEnableCheckTimer(QueryCookie cookie, int client, ConVarQueryResult result, const char[] cvarName, const char[] value)
 {

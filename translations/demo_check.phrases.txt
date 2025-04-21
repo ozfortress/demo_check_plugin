@@ -81,4 +81,10 @@
         "#format" "{1:s},{2:s}"
         "en"    "Couldn't validate SteamID for {1}, GetClientAuthId returned {2}. Thanks SourceMod!"
     }
+
+    "join_cvar_check"
+    {
+        "#format" "{1:s},{2:s},{3:s}"
+        "en"    "sm_democheck_enabled: {1}, sm_democheck_onreadyup: {2}, sm_democheck_warn: {3}"
+    }
 }
