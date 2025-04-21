@@ -23,7 +23,7 @@ public Plugin:myinfo =
     #endif
     author = "Shigbeard, Aad",
     description = "Checks if a player is recording a demo",
-    version = "1.2.0",
+    version = "2.0.0",
     url = "https://ozfortress.com/"
 };
 
